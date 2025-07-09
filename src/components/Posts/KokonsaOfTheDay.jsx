@@ -4,15 +4,17 @@ import { motion } from 'framer-motion'
 import { Crown, Heart, MessageCircle, TrendingUp } from 'lucide-react'
 import { usePost } from '../../contexts/PostContext'
 import { useUser } from '../../contexts/UserContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { formatDistanceToNow } from '../../utils/dateUtils'
 
 const KokonsaOfTheDay = () => {
   const { getKokonsaOfTheDay } = usePost()
   const { getUserById } = useUser()
+  const { loading } = useAuth()
   
   const kokonsaPost = getKokonsaOfTheDay()
   
-  if (!kokonsaPost) return null
+  if (loading || !kokonsaPost) return null
   
   const author = getUserById(kokonsaPost.userId)
 

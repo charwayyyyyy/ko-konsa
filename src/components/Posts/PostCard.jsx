@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -20,13 +20,20 @@ import { formatDistanceToNow } from '../../utils/dateUtils'
 import toast from 'react-hot-toast'
 
 const PostCard = ({ post, onEdit }) => {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { likePost, savePost, deletePost, getSavedPosts } = usePost()
   const { getUserById } = useUser()
   const [showMenu, setShowMenu] = useState(false)
-  const [isLiked, setIsLiked] = useState(post.likes.includes(user?.id))
+  const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(post.likes.length)
-  const [isSaved, setIsSaved] = useState(getSavedPosts().some(p => p.id === post.id))
+  const [isSaved, setIsSaved] = useState(false)
+  
+  useEffect(() => {
+    if (user) {
+      setIsLiked(post.likes.includes(user.id))
+      setIsSaved(getSavedPosts().some(p => p.id === post.id))
+    }
+  }, [user, post.likes, post.id, getSavedPosts])
   
   const author = getUserById(post.userId)
   const isOwner = user?.id === post.userId
@@ -128,6 +135,28 @@ const PostCard = ({ post, onEdit }) => {
     })
   }
 
+  if (loading) {
+    return (
+      <div className="card p-6 animate-pulse">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-full bg-gray-200"></div>
+            <div>
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <div className="h-3 w-32 bg-gray-100 rounded mt-2"></div>
+            </div>
+          </div>
+        </div>
+        <div className="h-16 bg-gray-100 rounded mb-4"></div>
+        <div className="flex justify-between">
+          <div className="h-6 w-20 bg-gray-200 rounded"></div>
+          <div className="h-6 w-20 bg-gray-200 rounded"></div>
+          <div className="h-6 w-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

@@ -1,0 +1,165 @@
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { 
+  Home, 
+  Search, 
+  Bell, 
+  Mail, 
+  Bookmark, 
+  User, 
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+
+const Navbar = () => {
+  const { user, logout, loading } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [navItems, setNavItems] = useState([])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  useEffect(() => {
+    if (user) {
+      setNavItems([
+        { icon: Home, label: 'Home', path: '/' },
+        { icon: Search, label: 'Search', path: '/search' },
+        { icon: Bell, label: 'Notifications', path: '/notifications' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
+        { icon: Bookmark, label: 'Saved', path: '/saved' },
+        { icon: User, label: 'Profile', path: `/profile/${user.username}` },
+      ])
+    }
+  }, [user])
+
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true
+    if (path !== '/' && location.pathname.startsWith(path)) return true
+    return false
+  }
+
+  return (
+    <>
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center space-x-2"
+              >
+                <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">K</span>
+                </div>
+                <span className="font-display font-bold text-2xl gradient-text">
+                  Kokonsa
+                </span>
+              </motion.div>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {!loading && user && navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                      isActive(item.path)
+                        ? 'bg-primary-50 text-primary-600'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* User Menu */}
+            <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+
+              {/* User Avatar */}
+              <div className="flex items-center space-x-3">
+                {user && (
+                <Link
+                  to={`/profile/${user.username}`}
+                  className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg p-2 transition-colors"
+                >
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="hidden sm:block font-medium text-gray-900">
+                    {user.name}
+                  </span>
+                </Link>
+              )}
+                
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                  title="Logout"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-16 left-0 right-0 bg-white border-b border-gray-200 z-40 md:hidden"
+        >
+          <div className="px-4 py-4 space-y-2">
+            {!loading && user && navItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    isActive(item.path)
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </motion.div>
+      )}
+    </>
+  )
+}
+
+export default Navbar

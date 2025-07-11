@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
+<head>
+    <title>Kokonsa App Debugger</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #results { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; margin-top: 10px; }
+        button { margin: 5px; padding: 5px 10px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Kokonsa App Debugger</h1>
+    <div>
+        <button id="checkApp">Check App</button>
+        <button id="checkSW">Check Service Worker</button>
+        <button id="clearCache">Clear Cache</button>
+        <button id="unregisterSW">Unregister Service Worker</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            resultsDiv.appendChild(p);
+        }
+
+        // Check if the app is accessible
+        document.getElementById('checkApp').addEventListener('click', async () => {
+            log('Checking app at http://localhost:3000...');
+            try {
+                const response = await fetch('http://localhost:3000', {
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    log(`App responded with status: ${response.status} ${response.statusText}`, 'success');
+                    log(`Content length: ${text.length} characters`, 'info');
+                    
+                    // Check if it contains the root div
+                    if (text.includes('<div id="root">')) {
+                        log('Found root div in response', 'success');
+                    } else {
+                        log('Root div not found in response', 'error');
+                    }
+                    
+                    // Check for script tags
+                    const scriptMatches = text.match(/<script[^>]*src="([^"]*)"/g);
+                    if (scriptMatches && scriptMatches.length > 0) {
+                        log(`Found ${scriptMatches.length} script tags:`, 'info');
+                        scriptMatches.forEach(script => {
+                            log(`  ${script}`, 'info');
+                        });
+                    } else {
+                        log('No script tags found', 'error');
+                    }
+                } else {
+                    log(`App responded with error: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`Error checking app: ${error.message}`, 'error');
+            }
+        });
+
+        // Check service worker
+        document.getElementById('checkSW').addEventListener('click', async () => {
+            log('Checking service worker...');
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length === 0) {
+                        log('No service workers registered', 'error');
+                    } else {
+                        log(`Found ${registrations.length} service worker registrations`, 'success');
+                        registrations.forEach((reg, i) => {
+                            log(`SW ${i+1} scope: ${reg.scope}`, 'info');
+                            log(`SW ${i+1} state: ${reg.active ? 'active' : 'inactive'}`, 'info');
+                            
+                            // Check if updating
+                            if (reg.installing) {
+                                log(`SW ${i+1} is installing`, 'info');
+                            }
+                            if (reg.waiting) {
+                                log(`SW ${i+1} is waiting to activate`, 'info');
+                            }
+                        });
+                    }
+                } catch (error) {
+                    log(`Error checking service worker: ${error.message}`, 'error');
+                }
+            } else {
+                log('Service Worker is not supported in this browser', 'error');
+            }
+        });
+
+        // Clear cache
+        document.getElementById('clearCache').addEventListener('click', async () => {
+            log('Clearing caches...');
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    log(`Found ${cacheNames.length} caches`, 'info');
+                    
+                    const deletions = cacheNames.map(cacheName => {
+                        log(`Deleting cache: ${cacheName}`, 'info');
+                        return caches.delete(cacheName);
+                    });
+                    
+                    await Promise.all(deletions);
+                    log('All caches cleared successfully', 'success');
+                } catch (error) {
+                    log(`Error clearing caches: ${error.message}`, 'error');
+                }
+            } else {
+                log('Cache API is not supported in this browser', 'error');
+            }
+        });
+
+        // Unregister service worker
+        document.getElementById('unregisterSW').addEventListener('click', async () => {
+            log('Unregistering service workers...');
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length === 0) {
+                        log('No service workers to unregister', 'info');
+                    } else {
+                        const unregistrations = registrations.map(async (reg, i) => {
+                            log(`Unregistering SW ${i+1} with scope: ${reg.scope}`, 'info');
+                            const success = await reg.unregister();
+                            if (success) {
+                                log(`SW ${i+1} unregistered successfully`, 'success');
+                            } else {
+                                log(`Failed to unregister SW ${i+1}`, 'error');
+                            }
+                            return success;
+                        });
+                        
+                        await Promise.all(unregistrations);
+                        log('Service worker unregistration complete', 'success');
+                    }
+                } catch (error) {
+                    log(`Error unregistering service workers: ${error.message}`, 'error');
+                }
+            } else {
+                log('Service Worker is not supported in this browser', 'error');
+            }
+        });
+
+        // Initial check
+        log('App debugger initialized. Click buttons above to run checks.');
+    </script>
+</body>
+</html>

@@ -128,6 +128,7 @@ self.addEventListener('install', event => {
           });
       })
   );
+});
 
 // Install a service worker
 self.addEventListener('install', event => {
@@ -265,6 +266,7 @@ function networkFirstStrategy(request) {
           });
         });
     });
+}
 
 // Update a service worker
 self.addEventListener('activate', event => {
@@ -303,7 +305,4 @@ self.addEventListener('message', event => {
       });
     });
   }
-}); // End of message event listener
-
-}; // End of networkFirstStrategy function
-}); // End of fetch event listener
+});

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
+<head>
+    <title>Debug Console for Kokonsa</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #console { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; height: 400px; overflow: auto; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        button { margin: 10px 0; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Console for Kokonsa</h1>
+    <button id="checkServer">Check Server</button>
+    <button id="checkSW">Check Service Worker</button>
+    <button id="clearConsole">Clear Console</button>
+    <div id="console"></div>
+
+    <script>
+        const consoleDiv = document.getElementById('console');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        document.getElementById('checkServer').addEventListener('click', async () => {
+            log('Checking server at http://localhost:3001...');
+            try {
+                const response = await fetch('http://localhost:3001', {
+                    mode: 'no-cors' // This allows us to at least see if the server responds
+                });
+                log(`Server responded with status: ${response.type}`, 'success');
+                
+                // Try to load the page in an iframe to see console errors
+                log('Attempting to load page in hidden iframe to capture console errors...');
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'http://localhost:3001';
+                document.body.appendChild(iframe);
+                
+                // Capture console errors from the iframe
+                iframe.onload = () => {
+                    log('Iframe loaded, checking for console errors...');
+                    try {
+                        const originalConsoleError = iframe.contentWindow.console.error;
+                        iframe.contentWindow.console.error = function() {
+                            log(`Console error in app: ${Array.from(arguments).join(' ')}`, 'error');
+                            originalConsoleError.apply(this, arguments);
+                        };
+                        log('Console error capture set up', 'success');
+                    } catch (e) {
+                        log(`Could not capture console errors: ${e.message}`, 'error');
+                    }
+                };
+            } catch (error) {
+                log(`Error connecting to server: ${error.message}`, 'error');
+            }
+        });
+        
+        document.getElementById('checkSW').addEventListener('click', () => {
+            log('Checking Service Worker registration...');
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations()
+                    .then(registrations => {
+                        if (registrations.length === 0) {
+                            log('No Service Workers registered', 'error');
+                        } else {
+                            log(`Found ${registrations.length} Service Worker registrations`, 'success');
+                            registrations.forEach((reg, i) => {
+                                log(`SW ${i+1} scope: ${reg.scope}`, 'info');
+                                log(`SW ${i+1} state: ${reg.active ? 'active' : 'inactive'}`, 'info');
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        log(`Service Worker error: ${error.message}`, 'error');
+                    });
+            } else {
+                log('Service Worker is NOT supported in this browser', 'error');
+            }
+        });
+        
+        document.getElementById('clearConsole').addEventListener('click', () => {
+            consoleDiv.innerHTML = '';
+            log('Console cleared');
+        });
+        
+        // Initial check
+        log('Debug console initialized. Click buttons above to run checks.');
+    </script>
+</body>
+</html>

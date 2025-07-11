@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
+<head>
+    <title>Debug Kokonsa</title>
+</head>
+<body>
+    <h1>Debugging Kokonsa</h1>
+    <div id="result"></div>
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        // Try to fetch the main page
+        fetch('http://localhost:3000')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                resultDiv.innerHTML += '<p style="color:green">Successfully fetched main page</p>';
+            })
+            .catch(error => {
+                resultDiv.innerHTML += `<p style="color:red">Error fetching main page: ${error.message}</p>`;
+            });
+            
+        // Check if we can access the API
+        fetch('http://localhost:3000/api/test')
+            .then(response => {
+                resultDiv.innerHTML += `<p>API response status: ${response.status}</p>`;
+                return response.text();
+            })
+            .then(data => {
+                resultDiv.innerHTML += `<p>API response: ${data.substring(0, 100)}...</p>`;
+            })
+            .catch(error => {
+                resultDiv.innerHTML += `<p style="color:orange">API error: ${error.message}</p>`;
+            });
+            
+        // Check service worker registration
+        if ('serviceWorker' in navigator) {
+            resultDiv.innerHTML += '<p>Service Worker is supported</p>';
+            navigator.serviceWorker.getRegistrations()
+                .then(registrations => {
+                    resultDiv.innerHTML += `<p>Found ${registrations.length} service worker registrations</p>`;
+                    registrations.forEach(reg => {
+                        resultDiv.innerHTML += `<p>Service Worker scope: ${reg.scope}</p>`;
+                    });
+                })
+                .catch(error => {
+                    resultDiv.innerHTML += `<p style="color:red">Service Worker error: ${error.message}</p>`;
+                });
+        } else {
+            resultDiv.innerHTML += '<p style="color:red">Service Worker is NOT supported</p>';
+        }
+        
+        // Check local storage
+        try {
+            const keys = Object.keys(localStorage);
+            resultDiv.innerHTML += `<p>LocalStorage has ${keys.length} items</p>`;
+            keys.forEach(key => {
+                resultDiv.innerHTML += `<p>LocalStorage key: ${key}</p>`;
+            });
+        } catch (e) {
+            resultDiv.innerHTML += `<p style="color:red">LocalStorage error: ${e.message}</p>`;
+        }
+    </script>
+</body>
+</html>

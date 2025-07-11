@@ -1,15 +1,17 @@
 // Service Worker for Kokonsa PWA
 
-const CACHE_NAME = 'kokonsa-cache-v2';
-const STATIC_CACHE_NAME = 'kokonsa-static-v2';
-const DYNAMIC_CACHE_NAME = 'kokonsa-dynamic-v2';
+// Use versioned cache names for better cache management
+const VERSION = '3';
+const CACHE_NAME = `kokonsa-cache-v${VERSION}`;
+const STATIC_CACHE_NAME = `kokonsa-static-v${VERSION}`;
+const DYNAMIC_CACHE_NAME = `kokonsa-dynamic-v${VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/assets/images/logo.svg',
-  '/assets/images/logo-192.png',
-  '/assets/images/logo-512.png',
+  '/assets/images/logo-192.svg',
+  '/assets/images/logo-512.svg',
   '/assets/index.css',
   '/assets/index.js',
   '/offline.html'
@@ -147,8 +149,23 @@ self.addEventListener('install', event => {
 
 // Cache and return requests
 self.addEventListener('fetch', event => {
-  // Skip cross-origin requests
+  // Handle cross-origin requests more gracefully
   if (!event.request.url.startsWith(self.location.origin)) {
+    // For cross-origin requests, use a network-only strategy
+    event.respondWith(
+      fetch(event.request)
+        .catch(error => {
+          console.error('Cross-origin fetch failed:', error);
+          // Return a generic response for cross-origin failures
+          if (event.request.destination === 'image') {
+            return caches.match('/assets/images/placeholder.svg');
+          }
+          return new Response('Cross-origin resource unavailable', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        })
+    );
     return;
   }
   

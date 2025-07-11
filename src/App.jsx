@@ -1,46 +1,81 @@
-import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { PostProvider } from './contexts/PostContext'
-import { UserProvider } from './contexts/UserContext'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import Home from './pages/Home'
-import Profile from './pages/Profile'
-import PostDetail from './pages/PostDetail'
-import SavedPosts from './pages/SavedPosts'
-import Search from './pages/Search'
-import NotFound from './pages/NotFound'
-import Layout from './components/Layout/Layout'
-import ScrollToTop from './components/UI/ScrollToTop'
-import ErrorBoundary from './components/UI/ErrorBoundary'
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PostProvider } from './contexts/PostContext';
+import { UserProvider } from './contexts/UserContext';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Home from './pages/Home';
+import Profile from './pages/Profile';
+import PostDetail from './pages/PostDetail';
+import SavedPosts from './pages/SavedPosts';
+import Search from './pages/Search';
+import NotFound from './pages/NotFound';
+import Layout from './components/Layout/Layout';
+import ScrollToTop from './components/UI/ScrollToTop';
+import ErrorBoundary from './components/UI/ErrorBoundary';
+import SplashScreen from './components/UI/SplashScreen';
+import LoadingSpinner from './components/UI/LoadingSpinner';
+import OfflineNotice from './components/UI/OfflineNotice';
+import { isOnline, registerConnectivityListeners } from './utils/offlineUtils';
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-    </div>
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
   }
   
   return user ? children : <Navigate to="/login" />
 }
 
 function PublicRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-    </div>
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
   }
   
   return !user ? children : <Navigate to="/" />
 }
 
 function App() {
+  const [isOffline, setIsOffline] = useState(!isOnline());
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Register event listeners for online/offline status
+    const cleanup = registerConnectivityListeners(handleOnline, handleOffline);
+
+    // Simulate app initialization with a slight delay for better UX
+    const timer = setTimeout(() => {
+      setIsAppReady(true);
+    }, 1500);
+
+    return () => {
+      cleanup();
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // Show splash screen while app is initializing
+  if (!isAppReady) {
+    return <SplashScreen isVisible={true} loadingText="Starting Kokonsa..." />;
+  }
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -48,7 +83,8 @@ function App() {
           <PostProvider>
             <Router>
               <ScrollToTop />
-              <div className="min-h-screen bg-gray-50">
+              <OfflineNotice isOffline={isOffline} />
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
               <Routes>
                 <Route path="/login" element={
                   <PublicRoute>

@@ -19,7 +19,7 @@ const SAMPLE_USERS = [
     email: 'john@example.com',
     password: 'password123',
     name: 'John Doe',
-    bio: 'Software developer and coffee enthusiast ☕',
+    bio: 'Software developer',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     followers: ['2', '3', '4'],
     following: ['2', '3'],
@@ -43,7 +43,7 @@ const SAMPLE_USERS = [
     email: 'alex@example.com',
     password: 'password123',
     name: 'Alex Wilson',
-    bio: 'Travel photographer 📸 | Adventure seeker',
+    bio: 'Travel photographer 📸',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     followers: ['1', '2', '4'],
     following: ['1', '2', '5'],
@@ -80,21 +80,67 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('kokonsa_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    const initializeAuth = async () => {
+      try {
+        // Check if user is logged in from localStorage
+        const savedUser = localStorage.getItem('kokonsa_user')
+        
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser)
+            setUser(parsedUser)
+            
+            // Validate user data
+            if (!parsedUser.id || !parsedUser.username) {
+              console.error('Invalid user data in localStorage')
+              localStorage.removeItem('kokonsa_user')
+              setUser(null)
+            }
+          } catch (error) {
+            console.error('Error parsing user data:', error)
+            localStorage.removeItem('kokonsa_user')
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+      } finally {
+        // Add a small delay to ensure smooth loading transition
+        setTimeout(() => setLoading(false), 300)
+      }
     }
-    setLoading(false)
+    
+    initializeAuth()
+    
+    // Set up storage event listener to sync auth state across tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'kokonsa_user') {
+        if (e.newValue) {
+          setUser(JSON.parse(e.newValue))
+        } else {
+          setUser(null)
+        }
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   const login = async (email, password) => {
     try {
       setLoading(true)
       
+      // Validate inputs
+      if (!email || !password) {
+        throw new Error('Email and password are required')
+      }
+      
+      // Simulate network delay for realistic behavior
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
       // Find user by email and password
       const foundUser = SAMPLE_USERS.find(
-        u => u.email === email && u.password === password
+        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
       )
       
       if (!foundUser) {
@@ -104,13 +150,25 @@ export const AuthProvider = ({ children }) => {
       // Remove password from user object
       const { password: _, ...userWithoutPassword } = foundUser
       
-      setUser(userWithoutPassword)
-      localStorage.setItem('kokonsa_user', JSON.stringify(userWithoutPassword))
+      // Set session data
+      const sessionData = {
+        ...userWithoutPassword,
+        lastLogin: new Date().toISOString(),
+        sessionId: Math.random().toString(36).substring(2)
+      }
       
-      toast.success('Welcome back!')
-      return userWithoutPassword
+      setUser(sessionData)
+      
+      try {
+        localStorage.setItem('kokonsa_user', JSON.stringify(sessionData))
+      } catch (storageError) {
+        console.error('Failed to save to localStorage:', storageError)
+      }
+      
+      toast.success(`Welcome back, ${foundUser.name}!`)
+      return sessionData
     } catch (error) {
-      toast.error(error.message)
+      toast.error(error.message || 'Login failed. Please try again.')
       throw error
     } finally {
       setLoading(false)
@@ -164,9 +222,23 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem('kokonsa_user')
-    toast.success('Logged out successfully')
+    try {
+      // Clear all app data
+      setUser(null)
+      localStorage.removeItem('kokonsa_user')
+      
+      // Clear any other app-specific data
+      const appKeys = Object.keys(localStorage).filter(key => key.startsWith('kokonsa_'))
+      appKeys.forEach(key => localStorage.removeItem(key))
+      
+      // Clear session storage
+      sessionStorage.clear()
+      
+      toast.success('Logged out successfully')
+    } catch (error) {
+      console.error('Error during logout:', error)
+      toast.error('There was a problem logging out')
+    }
   }
 
   const updateProfile = (updatedData) => {

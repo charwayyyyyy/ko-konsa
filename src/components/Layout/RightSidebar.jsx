@@ -25,25 +25,25 @@ const RightSidebar = () => {
     { tag: '#WebDevelopment', posts: '8.9K', trend: '+8%' },
     { tag: '#UIDesign', posts: '6.2K', trend: '+12%' },
     { tag: '#Photography', posts: '4.8K', trend: '+5%' },
-    { tag: '#Fitness', posts: '3.1K', trend: '+20%' },
+    { tag: '#Anime', posts: '3.1K', trend: '+20%' },
   ]
 
   const upcomingEvents = [
     {
-      title: 'React Conference 2024',
-      date: 'March 15, 2024',
-      location: 'San Francisco, CA',
+      title: 'React Conference 2025',
+      date: 'July 15, 2024',
+      location: 'Accra, Ghana',
       attendees: 1200
     },
     {
       title: 'Design Systems Meetup',
-      date: 'March 20, 2024',
+      date: 'Septeber 20, 2025',
       location: 'New York, NY',
       attendees: 350
     },
     {
       title: 'Photography Workshop',
-      date: 'March 25, 2024',
+      date: 'August 25, 2025',
       location: 'Los Angeles, CA',
       attendees: 80
     }

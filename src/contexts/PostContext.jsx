@@ -315,12 +315,16 @@ export const PostProvider = ({ children }) => {
       return postDate.toDateString() === today.toDateString()
     })
     
-    if (todayPosts.length === 0) {
-      // If no posts today, get the most liked post from recent posts
-      return posts.sort((a, b) => b.likes.length - a.likes.length)[0]
+    if (todayPosts.length > 0) {
+      return todayPosts.sort((a, b) => b.likes.length - a.likes.length)[0]
     }
     
-    return todayPosts.sort((a, b) => b.likes.length - a.likes.length)[0]
+    // If no posts today, get the most liked post from all posts
+    if (posts.length > 0) {
+      return posts.sort((a, b) => b.likes.length - a.likes.length)[0]
+    }
+
+    return null
   }
 
   const getRelatedPosts = (postId, limit = 3) => {

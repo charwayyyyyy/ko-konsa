@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import toast from 'react-hot-toast'
 
@@ -15,6 +15,10 @@ export const useUser = () => {
 export const UserProvider = ({ children }) => {
   const { user, updateProfile, sampleUsers } = useAuth()
   const [users, setUsers] = useState(sampleUsers)
+
+  useEffect(() => {
+    setUsers(sampleUsers)
+  }, [sampleUsers])
 
   const followUser = (targetUserId) => {
     if (!user) return

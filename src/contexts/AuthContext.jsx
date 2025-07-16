@@ -104,8 +104,7 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error('Error initializing auth:', error)
       } finally {
-        // Add a small delay to ensure smooth loading transition
-        setTimeout(() => setLoading(false), 300)
+        setLoading(false)
       }
     }
     
